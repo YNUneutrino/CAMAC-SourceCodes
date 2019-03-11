@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include "toyocamac.h"
 
+#define STATION 18	// Station Number
+
 #define FUNCTION_READ 0
 #define FUNCTION_LAM 8 
 #define FUNCTION_CLEAR 9 
@@ -15,8 +17,7 @@
 //#define DEBUG
 
 
-int main(void)
-{
+int main(void){
     int number_of_events = 5;
     int event_count;
     unsigned lam_bits;
@@ -27,7 +28,7 @@ int main(void)
     setcn(1);  
 
     execz();
-    camac_0(19, 0, FUNCTION_ENLAM);
+    camac_0(STATION, 0, FUNCTION_ENLAM);
     
     for (event_count = 0; event_count < number_of_events; event_count++) {
         while (! (lam_bits = rlam())) {

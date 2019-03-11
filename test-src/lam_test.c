@@ -1,7 +1,7 @@
 /* lam_test.c */
 /* Created by Enomoto Sanshiro on 23 July 1999. */
 /* Last updated by Enomoto Sanshiro on 23 July 1999. */
-/* Edited by Kensuke Yamamoto on 18 December 2018. */
+/* Edited by Kensuke Yamamoto on 11 March 2019. */
 
 
 #include <stdio.h>
@@ -11,149 +11,147 @@
 
 
 /***** LeCroy 2249W *****/
+/*
+int main(void){
+	int n = 15;		// station number
+	int data, dummy, q, x;
 
-int main(void)
-{
-    int n = 15;		// channel number
-    int data, dummy, q, x;
+	int timeout = 3;  // sec
+	int result;
+	int i;
 
-    int timeout = 3;  // sec
-    int result;
-    int i;
+	COPEN();
 
-    COPEN();
+	CSETCR(1);	 // set crate number
 
-    CSETCR(1);	 // set crate number
+	CGENZ();
 
-    CGENZ();
-    
-    for (i = 0; i < 16; i++) {
-	CAMAC(NAF(n, 0, 26), &dummy, &q, &x);
-        printf("Waiting LAM ...");
-        result = CWLAM(timeout);
+	for (i = 0; i < 16; i++) {
+		CAMAC(NAF(n, 0, 26), &dummy, &q, &x);
+		printf("Waiting LAM ...");
+		result = CWLAM(timeout);
 
-        if (result == 0) {
-	    printf("OK.\n");
+		if (result == 0) {
+			printf("OK.\n");
+		}
+		else {
+			printf("timed out.\n");
+		}
+
+		CAMAC(NAF(n, 0, 8), &dummy, &q, &x);
+		printf("F=8(LAM), Q=%d, X=%d\n", q, x);
+		CAMAC(NAF(n, 0, 0), &data, &q, &x);
+		printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
+		CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
+		CAMAC(NAF(n, 0, 10), &dummy, &q, &x);
+		printf("F=10(CLEAR_LAM), Q=%d, X=%d\n", q, x);
+
+		printf("\n");
 	}
-	else {
-	    printf("timed out.\n");
-	}	
 
-        CAMAC(NAF(n, 0, 8), &dummy, &q, &x);
-        printf("F=8(LAM), Q=%d, X=%d\n", q, x);
-        CAMAC(NAF(n, 0, 0), &data, &q, &x);
-        printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
-	CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
-	CAMAC(NAF(n, 0, 10), &dummy, &q, &x);
-	printf("F=10(CLEAR_LAM), Q=%d, X=%d\n", q, x);
+	CCLOSE();
 
-	printf("\n");
-    }
-
-    CCLOSE();
-
-    return 0;
-}
+	return 0;
+}*/
 
 
 /***** HOSHIN C009 *****/
 /*
-int main(void)
-{
-    int n = 17;		// channel number
-    int data, dummy, q, x;
+int main(void){
+	int n = 16;		// station number
+	int data, dummy, q, x;
 
-    int timeout = 3;  // sec
-    int result;
-    int i;
+	int timeout = 3;  // sec
+	int result;
+	int i;
 
-    COPEN();
+	COPEN();
 
-    CSETCR(1);	 // set crate number
+	CSETCR(1);	 // set crate number
 
-    CGENZ();
-    
-    CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
-    printf("F=9(CLEAR), Q=%d, X=%d\n", q, x);
+	CGENZ();
 
-    for (i = 0; i < 16; i++) {
-        printf("Waiting LAM ...");
-        result = CWLAM(timeout);
-
-        if (result == 0) {
-	    printf("OK.\n");
-	 }
-	 else {
-	    printf("timed out.\n");
-	 }	
-
-        printf("F=8(LAM), Q=%d, X=%d\n", q, x);
-	CAMAC(NAF(n, 0, 0), &data, &q, &x);
-        printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
-
-	usleep(1000);
 	CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
 	printf("F=9(CLEAR), Q=%d, X=%d\n", q, x);
 
-	printf("\n");
-    }
+	for (i = 0; i < 16; i++) {
+		printf("Waiting LAM ...");
+		result = CWLAM(timeout);
 
-    CCLOSE();
+		if (result == 0) {
+			printf("OK.\n");
+		}
+		else {
+			printf("timed out.\n");
+		}	
 
-    return 0;
+		CAMAC(NAF(n, 0, 8), &dummy, &q, &x);
+		printf("F=8(LAM), Q=%d, X=%d\n", q, x);
+		CAMAC(NAF(n, 0, 0), &data, &q, &x);
+		printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
+
+		usleep(1000);
+		CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
+		printf("F=9(CLEAR), Q=%d, X=%d\n", q, x);
+
+		printf("\n");
+	}
+
+	CCLOSE();
+
+	return 0;
 }*/
 
 
 /***** REPIC RPC-061 *****/
 /*
-int main(void)
-{
-    int n = 21;		// channel number
-    int data, dummy, q, x;
+int main(void){
+	int n = 18;		// station number
+	int data, dummy, q, x;
 
-    int timeout = 3;  // sec
-    int result;
-    int i;
+	int timeout = 3;  // sec
+	int result;
+	int i;
 
-    COPEN();
+	COPEN();
 
-    CSETCR(1);	// set crate number 
+	CSETCR(1);	// set crate number 
 
-    CGENZ();
-    
-    for (i = 0; i < 16; i++) {
-	CAMAC(NAF(n, 0, 26), &dummy, &q, &x);
-        printf("Waiting LAM ...");
-        result = CWLAM(timeout);
+	CGENZ();
 
-        if (result == 0) {
-	    printf("OK.\n");
+	for (i = 0; i < 16; i++) {
+		CAMAC(NAF(n, 0, 26), &dummy, &q, &x);
+		printf("Waiting LAM ...");
+		result = CWLAM(timeout);
+
+		if (result == 0) {
+			printf("OK.\n");
+		}
+		else {
+			printf("timed out.\n");
+		}	
+
+		CAMAC(NAF(n, 0, 8), &dummy, &q, &x);
+		printf("F=8(LAM), Q=%d, X=%d\n", q, x);
+		CAMAC(NAF(n, 0, 0), &data, &q, &x);
+		printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
+		CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
+		CAMAC(NAF(n, 0, 10), &dummy, &q, &x);
+		printf("F=10(CLEAR_LAM), Q=%d, X=%d\n", q, x);
+
+		printf("\n");
 	}
-	else {
-	    printf("timed out.\n");
-	}	
 
-        CAMAC(NAF(n, 0, 8), &dummy, &q, &x);
-        printf("F=8(LAM), Q=%d, X=%d\n", q, x);
-        CAMAC(NAF(n, 0, 0), &data, &q, &x);
-        printf("F=0(READ_DATA), DATA=%d, Q=%d, X=%d\n", data, q, x);
-	CAMAC(NAF(n, 0, 9), &dummy, &q, &x);
-	CAMAC(NAF(n, 0, 10), &dummy, &q, &x);
-	printf("F=10(CLEAR_LAM), Q=%d, X=%d\n", q, x);
+	CCLOSE();
 
-	printf("\n");
-    }
-
-    CCLOSE();
-
-    return 0;
+	return 0;
 }*/
 
 /***** Technoland C-TS105 *****/
 
-/*
+
 void TDC_INIT(void){
-	int n=19;	// Station Number
+	int n=17;	// Station Number
 	int wdata, A, F;
 	int dummy=0;
 	int q=0;
@@ -273,7 +271,7 @@ void TDC_INIT(void){
 }
 
 int main(void){
-	int n = 19;	// channel number
+	int n = 17;	// channel number
 	int data, wdata, dummy, q, x, hitchs, Nofhits;
 
 	int timeout = 3;	// sec
@@ -336,4 +334,4 @@ int main(void){
 	CCLOSE();
 
 	return 0;
-}*/
+}

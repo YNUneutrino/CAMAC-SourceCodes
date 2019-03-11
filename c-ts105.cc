@@ -16,8 +16,8 @@ using namespace std;
 #define DEBUG
 
 /***** TDC setting *****/
-const int TDC_STATION = 19;	// Station number
-const int TDCChannels[] = {0, 2};	// Channel number
+const int TDC_STATION = 17;	// Station number
+const int TDCChannels[] = {0};	// Channel number
 const int NCHTDC=(sizeof(TDCChannels)/sizeof(int));
 
 /***** CAMAC function *****/
@@ -98,8 +98,8 @@ int main(int argc, char *argv[]){
 		CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
 		hitchs = 0xffffff - wdata;
 #ifdef DEBUG
-		// cerr << "  HIT CHs = " << hex << hitchs << dec << endl;
-		cerr << "  HIT CHs = 0x" << hex << wdata << dec << endl;
+		cerr << "  HIT CHs = " << hex << hitchs << dec << endl;
+		// cerr << "  HIT CHs = 0x" << hex << wdata << dec << endl;
 #endif
 
 		if(!hitchs){

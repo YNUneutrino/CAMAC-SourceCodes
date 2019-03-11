@@ -1,5 +1,5 @@
 /* SLOT NUMBER of TDC RPC-061(REPIC) */
-#define STATION 17	// station number
+#define STATION 18	// station number
 int ch[]={0}; /* channel number list */
 #define NCH  (sizeof(ch)/sizeof(ch[0]))
 

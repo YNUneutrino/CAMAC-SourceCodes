@@ -1,6 +1,6 @@
 /* SLOT NUMBER of ADC C009(HOSHIN) */
 #define STATION 16
-int ch[]={0, 2}; /* channel number list */
+int ch[]={0}; /* channel number list */
 #define NCH  (sizeof(ch)/sizeof(ch[0]))
 
 /**** Edited by Takashi Kanai ****/
