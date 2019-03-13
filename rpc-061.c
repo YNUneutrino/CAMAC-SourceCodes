@@ -1,14 +1,13 @@
-/* SLOT NUMBER of TDC RPC-061(REPIC) */
-#define STATION 18	// station number
-int ch[]={0}; /* channel number list */
-#define NCH  (sizeof(ch)/sizeof(ch[0]))
+/* TDC RPC-061(REPIC) Operation Source Code */
+#define STATION 18	// Station Number
+int ch[]={0}; // Channel Number List
+#define NCH (sizeof(ch)/sizeof(ch[0]))
 
 /**** Edited by Takashi Kanai ****/
 /**** Last update at 2005/04/01 ****/
 /*** Modified at 2008/05/22 by Yosuke Maeda ***/
 /*** Modified at 2010/08/04 by Yasuyuki Furuichi ***/
-/*** Modified at 2018/11/22 by Kensuke Yamamoto ***/
-
+/*** Modified at 2019/03/13 by Kensuke Yamamoto ***/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,7 +39,7 @@ int main(int argc, char *argv[]){
     return 1;
   }
   sprintf(fname,"../data/%s",argv[2]);
-  
+
   nloop = atoi(argv[1]);
   if(!(fp = fopen(fname,"w"))){
     printf("File: %s open error!!\n", fname);
@@ -50,30 +49,28 @@ int main(int argc, char *argv[]){
 
  // fprintf(fp, "#ofCHs\t%d\n",NCH);
 
-  /* init camac */
+  /* Initialize CAMAC */
   if(CAMOPN()){
     printf("CAMAC OPEN ERROR!\n");
     return 1;
   }
-  
-  
-  CSETCR(1);
+
+
+  CSETCR(1);  // Crate Number
   CGENZ();
   fprintf(stderr,"### CAMAC initialized.\n");
 
-  
+
   CGENC();
-  CAMAC(NAF(STATION,0,ENLAM), &dummy, &q, &x); //Enable LAM
-  CAMAC(NAF(STATION,0,CLR), &dummy, &q, &x); // and Clear it TDC
+  CAMAC(NAF(STATION,0,ENLAM), &dummy, &q, &x); // Enable LAM
+  CAMAC(NAF(STATION,0,CLR), &dummy, &q, &x);  // Clear TDC
   fprintf(stderr,"### START DAQ process.\n");
 
 
-  
   for(iloop = 0;iloop < nloop;iloop++){
- 
     q=0;
     while(!q) CAMAC(NAF(STATION,0,LAM),&dummy,&q,&x);
-      
+
     for(i=0;i < NCH;i++){
       CAMAC(NAF(STATION,ch[i],READ), &data[i], &q, &x);
     }
@@ -83,29 +80,30 @@ int main(int argc, char *argv[]){
     prn = 0;
     for(i=0;i<NCH;i++){
       if(data[i] != 4095){
-	prn++;
+	       prn++;
       }
     }
     if(prn == NCH){
       printf("\n");
       for(i=0;i<NCH;i++){
-         printf(   "Ch%d value %7d / ",ch[i],data[i]);
-        fprintf(fp,"%7d ",data[i]);
+        printf("Ch%d value %5d / ",ch[i],data[i]);
+        fprintf(fp,"%5d ",data[i]);
       }
       printf("(%d/%d)", iloop, nloop);
       fprintf(fp, "\n");
       fflush(fp);
-    }else{
-      printf("*");
+    }
+    else{
+      printf("No hits :: Skip\n");
     }
     fflush(stdout);
   }
-  
-  
+
+
   CGENZ();
   CSETI();
   CAM_Close();
-  
+
   fclose(fp);
 
   printf("---------------------------\n");

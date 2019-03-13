@@ -1,13 +1,13 @@
-/* SLOT NUMBER of ADC C009(HOSHIN) */
-#define STATION 16
-int ch[]={0}; /* channel number list */
-#define NCH  (sizeof(ch)/sizeof(ch[0]))
+/* ADC C009(HOSHIN) Operation Source Code */
+#define STATION 16	// Station Number
+int ch[]={0}; // Channel Number List
+#define NCH (sizeof(ch)/sizeof(ch[0]))
 
 /**** Edited by Takashi Kanai ****/
 /**** Last update at 2005/04/01 ****/
 /*** Modified at 2008/05/22 by Yosuke Maeda ***/
 /*** Modified at 2010/08/04 by Yasuyuki Furuichi ***/
-/*** Modified at 2018/12/18 by Kensuke Yamamoto ***/
+/*** Modified at 2019/03/13 by Kensuke Yamamoto ***/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,29 +38,29 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	sprintf(fname,"../data/%s",argv[2]);
-	
+
 	nloop = atoi(argv[1]);
 	if(!(fp = fopen(fname,"w"))){
 		printf("File: %s open error!!\n", fname);
 		return 1;
 	}
-	
+
 	printf("START DATA TAKING --- %d events ---\n",nloop);
 
-//	fprintf(fp, "#ofCHs\t%d\n",NCH);
+// fprintf(fp, "#ofCHs\t%d\n",NCH);
 
-	/* init camac */
+	/* Initialize CAMAC */
 	if(CAMOPN()){
 		printf("CAMAC OPEN ERROR!\n");
 		return 1;
 	}
 
-	CSETCR(1);
+	CSETCR(1);	// Crate Number
 	CGENZ();
 	fprintf(stderr,"### CAMAC initialized.\n");
 
 	CGENC();
-	CAMAC(NAF(STATION, 0, CLR), &dummy, &q, &x); // and Clear it ADC
+	CAMAC(NAF(STATION, 0, CLR), &dummy, &q, &x); // Clear ADC
 	fprintf(stderr,"### START DAQ process.\n");
 
 	for(iloop = 0;iloop < nloop;iloop++){
@@ -83,19 +83,19 @@ int main(int argc, char *argv[]){
 		if(prn == NCH){
 			printf("\n");
 			for(i=0;i<NCH;i++){
-				printf("Ch%d value %7d / ", ch[i], data[i]);
-				fprintf(fp,"%7d ",data[i]);
+				printf("Ch%d value %5d / ", ch[i], data[i]);
+				fprintf(fp,"%5d ",data[i]);
 			}
 			printf("(%d/%d)", iloop+1, nloop);
 			fprintf(fp, "\n");
 			fflush(fp);
 		}
 		else{
-			printf("*");
+			printf("No hits :: Skip\n");
 		}
 		fflush(stdout);
-	}  
-  
+	}
+
 	CGENZ();
 	CSETI();
 	CAM_Close();

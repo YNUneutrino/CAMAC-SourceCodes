@@ -1,12 +1,13 @@
-/* SLOT NUMBER of OUTPUT Register */
-#define  OUTREG 17
-int ch[]={0}; /* channel number list */
-#define  NCH  (sizeof(ch)/sizeof(ch[0]))
+/* OUTPUT Register Operation Source Code */
+#define OUTREG 20 // Station Number
+int ch[]={0}; // Channel Number List
+#define NCH (sizeof(ch)/sizeof(ch[0]))
 
 /**** Edited by Takashi Kanai ****/
 /**** Last update at 2005/4/1 ****/
-/*** Modified at 2008/5/22 by Maeda Yosuke ***/
-/*** Modified at 2010/8/04 by Furuichi Yasuyuki ***/
+/*** Modified at 2008/5/22 by Yosuke Maeda ***/
+/*** Modified at 2010/8/04 by Yasuyuki Furuichi ***/
+/*** Modified at 2019/03/13 by Kensuke Yamamoto ***/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,24 +27,27 @@ int ch[]={0}; /* channel number list */
 
 int main(int argc, char *argv[]){
   int dumy, q=0, x=0;
-  int output_ch = 0x4001;
-  
-  /* init camac */
+  int output_ch = 0x4001; // ?
+
+  /* Initialize CAMAC */
   if(CAMOPN()){
     printf("CAMAC OPEN ERROR!\n");
     return 1;
   }
-  CSETCR(0);
+  CSETCR(1);  // Crate Number
   CGENZ();
   fprintf(stderr,"### CAMAC initialized.\n");
 
   CGENC();
+
+
   //  CAMAC(NAF(OUTREG,0,ENLAM), &dumy, &q, &x);
   CAMAC(NAF(OUTREG,0,CLR), &dumy, &q, &x);
   fprintf(stderr,"Clear output pulse.\n");
 
   CAMAC(NAF(OUTREG,0,WRITE), &output_ch, &q, &x);
   fprintf(stderr,"Output from ch1.\n");
+
 
   CGENZ();
   CSETI();

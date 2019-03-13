@@ -1,5 +1,5 @@
-/***** ADC 2249W(LeCroy) and TDC C-TS105(Technoland) *****/
-/***** 2018/12/19 Kensuke Yamamoto *****/
+/* ADC 2249W(LeCroy) and TDC C-TS105(Technoland) Operation Source Code */
+/***** 2019/03/13 Kensuke Yamamoto *****/
 
 extern "C" {
 #include "camlib.h"
@@ -29,7 +29,7 @@ const int TDC_STATION = 19;
 const int TDCChannels[] = {0, 2};
 const int NCHTDC=(sizeof(TDCChannels)/sizeof(int));
 
-/***** CAMAC function *****/
+/***** CAMAC functions *****/
 const int READ_DATA = 0;
 const int READ_HIT = 1;
 const int N_HITS = 2;
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]){
 	int dummy=0, wdata=0, q=0, x=0, i, j;
 	char filename[100];
 
-	/**** check arguments ****/
+	/**** Check arguments ****/
 	if( argc != 3 ) {
 		cerr << "Arguments are not correct" << endl;
 		Usage();
@@ -90,25 +90,25 @@ int main(int argc, char *argv[]){
 		/***** ADC and TDC start *****/
 
 		Init_TDC();
-		wdata=1;
-		CAMAC(NAF(TDC_STATION, 0, SET_MAX), &wdata, &q, &x);
-		CAMAC(NAF(ADC_STATION, 0, EN_LAM), &dummy, &q, &x);
-		CAMAC(NAF(TDC_STATION, 0, EN_LAM), &dummy, &q, &x);
-		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x);
-		CAMAC(NAF(TDC_STATION, 0, TDC_START), &dummy, &q, &x);
+		wdata=1;	// Maximum measurement time (us) (decimal number)
+		CAMAC(NAF(TDC_STATION, 0, SET_MAX), &wdata, &q, &x);	// Set TDC measurement time
+		CAMAC(NAF(ADC_STATION, 0, EN_LAM), &dummy, &q, &x);	// Enable ADC LAM
+		CAMAC(NAF(TDC_STATION, 0, EN_LAM), &dummy, &q, &x);	// Enable TDC LAM
+		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x); // Clear ADC
+		CAMAC(NAF(TDC_STATION, 0, TDC_START), &dummy, &q, &x);	// Start measurement
 
-		/***** waiting LAM *****/
+		/***** Waiting LAM *****/
 		int qa = 0;
 		int qt = 0;
 		cerr << "\tWaiting LAM ......" << flush;
 		while( !qa && !qt ){
 			CAMAC(NAF(ADC_STATION, 0, LAM), &dummy, &qa, &x);
 			CAMAC(NAF(TDC_STATION, 0, LAM), &dummy, &qt, &x);
-			usleep(5);
+			usleep(1);
 		}
 		cerr << "fire!!" << flush;
 
-		/***** check HIT channel ******/
+		/***** Check HIT channel ******/
 		int hitchs;
 		wdata = 0;
 		CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]){
 			cerr << "\tTDC NO hits :: skip " << endl;
 #endif
 		}
-		
+
 		/***** Single Hit Mode *****/
 		else{
 			cerr << "\t";
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]){
 					readdata++;
 				}
 			}
-			
+
 			if(readdata==0){
 				for(i=0;i<NCHADC;i++){
 					CAMAC(NAF(ADC_STATION,ADCChannels[i],READ_DATA), &adcdata[i], &q, &x);
@@ -153,18 +153,18 @@ int main(int argc, char *argv[]){
 				}
 				outputfile << endl;
 			}
-			
+
 			else{
 				cerr << "TDC NO hits or TDC multi hits :: skip ";
 			}
-			
+
 			printf("(%ld/%ld)", iloop+1, nloop);
 			cerr << endl;
 			for(i=0;i<NCHTDC;i++){
 				cerr << "\t" << Nofhits[i]<< " hits!\t";
 			}
 		}
-		
+
 		/***** Multi Hits Mode *****/
 /*		else{
 			cerr << "\t";
@@ -192,7 +192,7 @@ int main(int argc, char *argv[]){
 			}
 			outputfile << endl;
 		}*/
-		
+
 		iloop ++;
 		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x);
 		CAMAC(NAF(TDC_STATION, 0, CLR), &dummy, &q, &x);
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]){
 	CGENZ();
 	CSETI();
 	CAM_Close();
-	
+
 	outputfile.close();
 
 	cerr << endl;
@@ -228,7 +228,7 @@ int Init_CAMAC( void ){
 
 	//-------------------------------------------------------------
 
-	if(CSETCR(1)) {
+	if(CSETCR(1)) {	// Crate Number
 		cerr << "Camac : no crate #0." << endl;
 		return 1;
 	}
@@ -267,129 +267,129 @@ void Init_TDC(void){
 
 	/***** C-TS105 setup *****/
 
-	// write registers
+	// Write registers
 	A=0; F=LOAD_REG; wdata=0xab;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=0; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << "C-TS105 setting ... 1" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0x620;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x62;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 2" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0x2004;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x6;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=2; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 3" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=3; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 4" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x200;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=4; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 5" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=5; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 6" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x800;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=6; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 7" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0x1fb4;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=7; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 8" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x7ff;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=11; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 9" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=12; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 10" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=14; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 11" << flush;
-	usleep(10);
+	usleep(1);
 	A=0; F=LOAD_REG; wdata=0x1;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=1; F=LOAD_REG; wdata=0x240;
 	CAMAC(NAF(N,A,F), &wdata, &q, &x);
-	usleep(10);
+	usleep(1);
 	A=4; F=WRITE;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
-	usleep(10);
+	usleep(1);
 	cerr << ", 12" << flush;
 	A=0; F=CLR;
 	CAMAC(NAF(N,A,F), &dummy, &q, &x);
 	cerr << ", 13 done." << endl;
-	usleep(10);
+	usleep(1);
 }
