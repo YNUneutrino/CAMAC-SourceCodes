@@ -82,9 +82,9 @@ int main(int argc, char *argv[]){
 	cerr << "START DATA TAKING --- " << nloop << " events ---" << endl;
 
 	for(i=0;i<NCHADC;i++){
-    outputfile << "ADCch" << ADCChannels[i] << "\t";
-  }
-	outputfile << "TDCch\tTDC counts..." << endl;
+		outputfile << "ADCch" << ADCChannels[i] << "\t";
+	}
+	outputfile << "TDCch\tTDC cts..." << endl;
 
 
 	while( iloop < nloop ){
@@ -104,12 +104,12 @@ int main(int argc, char *argv[]){
 		int qa = 0;
 		int qt = 0;
 		cerr << "\tWaiting LAM ......" << flush;
-		while( !qa && !qt ){
+		while( qa==0 || qt==0 ){
 			CAMAC(NAF(ADC_STATION, 0, LAM), &dummy, &qa, &x);
 			CAMAC(NAF(TDC_STATION, 0, LAM), &dummy, &qt, &x);
 			usleep(1);
 		}
-		cerr << "fire!!" << flush;
+		cerr << "fire!!\t" << flush;
 
 		/***** Read ADC Data *****/
 		for(i=0;i<NCHADC;i++){
@@ -117,23 +117,30 @@ int main(int argc, char *argv[]){
 		}
 		prn = 0;
 		for(i=0;i<NCHADC;i++){
-			if(data[i] != 4095){
+			if(adcdata[i] != 4095){
 				prn++;
 			}
 		}
 		if(prn == NCHADC){
 
 			/***** Check HIT channel ******/
-			int hitchs;
+			int hitchs, hitchs_org;
+			int hitch[8]={0};
 			wdata = 0;
 			CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
 			hitchs = 0xffffff - wdata;
+			hitchs_org = hitchs;
 #ifdef DEBUG
-			cerr << "  TDC HIT CHs = " << hex << hitchs << dec << endl;
-			// cerr << "TDC HIT CHs = 0x" << hex << wdata << dec << endl;
+			hitch[0]=hitchs%2;
+			cerr << "HIT CH: CH0<----->CH7 : " << hitch[0];
+			for(i=1;i<8;i++){
+				hitchs = (hitchs-hitch[i-1])/2;
+				hitch[i] = hitchs%2;
+				cerr << hitch[i];
+			}
+			cerr << endl;
 #endif
-
-			if(!hitchs){
+			if(!hitchs_org){
 #ifdef DEBUG
 				cerr << "\tTDC NO hits :: Skip " << endl;
 #endif
@@ -158,7 +165,7 @@ int main(int argc, char *argv[]){
 					for(i=0;i<NCHADC;i++){
 			    	printf("Ch%d value %5d / ", ADCChannels[i], adcdata[i]);
 			     	outputfile << adcdata[i] << "\t";
-			    }
+				}
 					for(i=0;i<NCHTDC;i++){
 						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
 						printf("TDC Ch%d value %5d / ",TDCChannels[i],tdcdata[i]);
@@ -180,7 +187,7 @@ int main(int argc, char *argv[]){
 
 
 			/***** Multi Hits Mode *****/
-/*		else{
+/*			else{
 				cerr << "\t";
 				// check # of hits and read data
 				int Nofhits[NCHTDC], tdchits[NCHTDC];

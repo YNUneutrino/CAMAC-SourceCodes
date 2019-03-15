@@ -104,7 +104,7 @@ int main(void){
 
 
 /***** REPIC RPC-061 *****/
-/*
+
 int main(void){
 	int n = 18;		// station number
 	int data, dummy, q, x;
@@ -145,11 +145,10 @@ int main(void){
 	CCLOSE();
 
 	return 0;
-}*/
+}
 
 /***** Technoland C-TS105 *****/
-
-
+/*
 void TDC_INIT(void){
 	int n=17;	// Station Number
 	int wdata, A, F;
@@ -334,4 +333,4 @@ int main(void){
 	CCLOSE();
 
 	return 0;
-}
+}*/

@@ -1,6 +1,6 @@
 /* ADC 2249W(LeCroy) Operation Source Code */
 #define STATION 15  // Station Number
-int ch[]={0}; /* Channel Number List */
+int ch[]={0}; // Channel Number List
 #define NCH (sizeof(ch)/sizeof(ch[0]))
 
 /*** Edited by Takashi Kanai ***/
@@ -28,7 +28,7 @@ int ch[]={0}; /* Channel Number List */
 int main(int argc, char *argv[]){
   FILE *fp;
   int i, prn;
-  int data[NCH];
+  int data[NCH]={0};
   int nloop, iloop;
   int dummy, q=0, x=0;
   char fname[1000];
@@ -67,12 +67,14 @@ int main(int argc, char *argv[]){
   CGENC();
   CAMAC(NAF(STATION,0,ENLAM), &dummy, &q, &x);  // Enable LAM
   CAMAC(NAF(STATION,0,CLR), &dummy, &q, &x);  // Clear ADC
-  fprintf(stderr,"### START DAQ process.\n");
+  fprintf(stderr,"### START DAQ process.\n\n");
 
 
   for(iloop = 0;iloop < nloop;iloop++){
     q=0;
-    while(!q) CAMAC(NAF(STATION,0,LAM),&dummy,&q,&x);
+    while(q==0){
+    	CAMAC(NAF(STATION,0,LAM),&dummy,&q,&x);
+    }
 
     for(i=0;i<NCH;i++){
       CAMAC(NAF(STATION,ch[i],READ), &data[i], &q, &x);
@@ -87,12 +89,11 @@ int main(int argc, char *argv[]){
       }
     }
     if(prn == NCH){
-      printf("\n");
       for(i=0;i<NCH;i++){
         printf("Ch%d value %5d / ",ch[i],data[i]);
         fprintf(fp,"%5d ",data[i]);
       }
-      printf("(%d/%d)", iloop+1, nloop);
+      printf("(%d/%d)\n", iloop+1, nloop);
       fprintf(fp, "\n");
       fflush(fp);
     }

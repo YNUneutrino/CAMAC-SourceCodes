@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
 	for(iloop = 0;iloop < nloop;iloop++){
 		int qa=0;
 		int qt=0;
-		while(!qa && !qt){
+		while(qa==0 || qt==0){
 			CAMAC(NAF(ADC_STATION,0,LAM),&dummy,&q,&x);	// LAM of ADC
 			CAMAC(NAF(TDC_STATION,0,LAM),&dummy,&q,&x);	// LAM of TDC
 		}
@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
 				fprintf(fp,"%6d ",tdc_data[i]);	// Write TDC data
 			}
 
-			printf("(%d/%d)", iloop, nloop);
+			printf("(%d/%d)", iloop+1, nloop);
 			fprintf(fp, "\n");
 			fflush(fp);
 		}

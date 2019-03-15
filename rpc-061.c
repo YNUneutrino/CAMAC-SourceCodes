@@ -28,7 +28,7 @@ int ch[]={0}; // Channel Number List
 int main(int argc, char *argv[]){
   FILE *fp;
   int i, prn;
-  int data[NCH];
+  int data[NCH]={0};
   int nloop, iloop;
   int dummy, q=0, x=0;
   char fname[1000];
@@ -73,7 +73,9 @@ int main(int argc, char *argv[]){
 
   for(iloop = 0;iloop < nloop;iloop++){
     q=0;
-    while(!q) CAMAC(NAF(STATION,0,LAM),&dummy,&q,&x);
+    while(q==0){
+    	CAMAC(NAF(STATION,0,LAM),&dummy,&q,&x);
+    }
 
     for(i=0;i < NCH;i++){
       CAMAC(NAF(STATION,ch[i],READ), &data[i], &q, &x);
@@ -93,7 +95,7 @@ int main(int argc, char *argv[]){
         printf("Ch%d value %5d / ",ch[i],data[i]);
         fprintf(fp,"%5d ",data[i]);
       }
-      printf("(%d/%d)", iloop, nloop);
+      printf("(%d/%d)", iloop+1, nloop);
       fprintf(fp, "\n");
       fflush(fp);
     }

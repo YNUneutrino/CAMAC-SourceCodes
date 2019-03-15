@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
 
 	cerr << "START DATA TAKING --- " << nloop << " events ---" << endl;
 
-	outputfile << "CH\tTDC counts..." << endl;
+	outputfile << "CH\tTDC cts..." << endl;
 
 	while( iloop < nloop ){
 		cerr << "TRIG:" << iloop+1 << "\t";
@@ -85,23 +85,31 @@ int main(int argc, char *argv[]){
 		/***** Waiting LAM *****/
 		q=0;
 		cerr << "\tWaiting LAM ......" << flush;
-		while( !q ){
+		while( q==0 ){
 			CAMAC(NAF(TDC_STATION, 0, LAM), &dummy, &q, &x);
-			usleep(5);
+			usleep(1);
 		}
-		cerr << "fire!!" << flush;
+		cerr << "fire!!\t";
 
 		/***** Check HIT channel ******/
-		int hitchs;
+		int hitchs, hitchs_org;
+		int hitch[8]={0};
 		wdata = 0;
 		CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
 		hitchs = 0xffffff - wdata;
+		hitchs_org = hitchs;
 #ifdef DEBUG
-		cerr << "  HIT CHs = " << hex << hitchs << dec << endl;
-		// cerr << "  HIT CHs = 0x" << hex << wdata << dec << endl;
+		hitch[0]=hitchs%2;
+		cerr << "HIT CH: CH0<----->CH7 : " << hitch[0];
+		for(i=1;i<8;i++){
+			hitchs = (hitchs-hitch[i-1])/2;
+			hitch[i] = hitchs%2;
+			cerr << hitch[i];
+		}
+		cerr << endl;
 #endif
 
-		if(!hitchs){
+		if(!hitchs_org){
 #ifdef DEBUG
 			cerr << "\tNO hits :: Skip " << endl;
 #endif
@@ -135,7 +143,6 @@ int main(int argc, char *argv[]){
 			}
 
 			printf("(%ld/%ld)\n", iloop+1, nloop);
-			cerr << endl;
 			for(i=0;i<NCHTDC;i++){
 				printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
 			}
@@ -158,7 +165,6 @@ int main(int argc, char *argv[]){
 				}
 			}
 			printf("(%ld/%ld)\n", iloop+1, nloop);
-			cerr << endl;
 			for(i=0;i<NCHTDC;i++){
 				printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
 			}
