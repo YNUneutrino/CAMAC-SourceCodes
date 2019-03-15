@@ -1,5 +1,5 @@
 /* ADC 2249W(LeCroy) and TDC C-TS105(Technoland) Operation Source Code */
-/***** 2019/03/13 Kensuke Yamamoto *****/
+/***** 2019/03/15 Kensuke Yamamoto *****/
 
 extern "C" {
 #include "camlib.h"
@@ -20,13 +20,13 @@ using namespace std;
 #define DEBUG
 
 /***** ADC setting *****/
-const int ADC_STATION = 15;
-const int ADCChannels[] = {0, 2};
+const int ADC_STATION = 15;	// ADC Station Number
+const int ADCChannels[] = {0, 2};	// ADC Channel Number List
 const int NCHADC=(sizeof(ADCChannels)/sizeof(int));
 
 /***** TDC setting *****/
-const int TDC_STATION = 19;
-const int TDCChannels[] = {0, 2};
+const int TDC_STATION = 17;	// TDC Station Number
+const int TDCChannels[] = {0, 2};	// TDC Channel Number List
 const int NCHTDC=(sizeof(TDCChannels)/sizeof(int));
 
 /***** CAMAC functions *****/
@@ -49,7 +49,7 @@ void Init_TDC( void );
 int main(int argc, char *argv[]){
 
 	long nloop, iloop=0;
-	int dummy=0, wdata=0, q=0, x=0, i, j;
+	int dummy=0, wdata=0, q=0, x=0, i, j, prn;
 	char filename[100];
 
 	/**** Check arguments ****/
@@ -81,8 +81,11 @@ int main(int argc, char *argv[]){
 
 	cerr << "START DATA TAKING --- " << nloop << " events ---" << endl;
 
-//	outputfile << "#ofCHs\t" << NCHTDC << endl;
-//	outputfile << "#ofCHs\t" << NCHADC + NCHTDC << endl;
+	for(i=0;i<NCHADC;i++){
+    outputfile << "ADCch" << ADCChannels[i] << "\t";
+  }
+	outputfile << "TDCch\tTDC counts..." << endl;
+
 
 	while( iloop < nloop ){
 		cerr << "TRIG:" << iloop+1 << "\t";
@@ -108,95 +111,111 @@ int main(int argc, char *argv[]){
 		}
 		cerr << "fire!!" << flush;
 
-		/***** Check HIT channel ******/
-		int hitchs;
-		wdata = 0;
-		CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
-		hitchs = 0xffffff - wdata;
-#ifdef DEBUG
-		cerr << "  TDC HIT CHs = 0x" << hex << hitchs << dec << endl;
-#endif
-
-		if(!hitchs){
-#ifdef DEBUG
-			cerr << "\tTDC NO hits :: skip " << endl;
-#endif
+		/***** Read ADC Data *****/
+		for(i=0;i<NCHADC;i++){
+			CAMAC(NAF(ADC_STATION, ADCChannels[i], READ_DATA), &adcdata[i], &q, &x);
 		}
+		prn = 0;
+		for(i=0;i<NCHADC;i++){
+			if(data[i] != 4095){
+				prn++;
+			}
+		}
+		if(prn == NCHADC){
 
-		/***** Single Hit Mode *****/
-		else{
-			cerr << "\t";
-			/***** check # of hits and read data *****/
-			int readdata=0;
-			int Nofhits[NCHTDC], tdchits[NCHTDC];
-			for(i=0;i<NCHTDC;i++){
-				tdchits[i] = 0;
-				CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
-				Nofhits[i] = tdchits[i] - 0xff0000;
-				if(Nofhits[i] != 1){
-					readdata++;
-				}
+			/***** Check HIT channel ******/
+			int hitchs;
+			wdata = 0;
+			CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
+			hitchs = 0xffffff - wdata;
+#ifdef DEBUG
+			cerr << "  TDC HIT CHs = " << hex << hitchs << dec << endl;
+			// cerr << "TDC HIT CHs = 0x" << hex << wdata << dec << endl;
+#endif
+
+			if(!hitchs){
+#ifdef DEBUG
+				cerr << "\tTDC NO hits :: Skip " << endl;
+#endif
 			}
 
-			if(readdata==0){
-				for(i=0;i<NCHADC;i++){
-					CAMAC(NAF(ADC_STATION,ADCChannels[i],READ_DATA), &adcdata[i], &q, &x);
-					printf("ADC Ch%d value %7d / ",ADCChannels[i],adcdata[i]);
-					outputfile << adcdata[i] << "\t";
-				}
+			/***** Single Hit Mode *****/
+			else{
+				cerr << "\t";
+				// Check # of hits and read TDC data
+				int readdata=0;
+				int Nofhits[NCHTDC], tdchits[NCHTDC];
 				for(i=0;i<NCHTDC;i++){
-					for(j=0;j<Nofhits[i];j++){
-						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
-						printf("TDC Ch%d value %7d / ",TDCChannels[i],tdcdata[i]);
-						outputfile << tdcdata[i] << "\t";
+					tdchits[i] = 0;
+					CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
+					Nofhits[i] = tdchits[i] - 0xff0000;
+					if(Nofhits[i] != 1){
+						readdata++;
 					}
 				}
-				outputfile << endl;
-			}
 
-			else{
-				cerr << "TDC NO hits or TDC multi hits :: skip ";
-			}
+				if(readdata==0){
+					for(i=0;i<NCHADC;i++){
+			    	printf("Ch%d value %5d / ", ADCChannels[i], adcdata[i]);
+			     	outputfile << adcdata[i] << "\t";
+			    }
+					for(i=0;i<NCHTDC;i++){
+						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
+						printf("TDC Ch%d value %5d / ",TDCChannels[i],tdcdata[i]);
+						outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
+					}
+					outputfile << endl;
+				}
 
-			printf("(%ld/%ld)", iloop+1, nloop);
-			cerr << endl;
-			for(i=0;i<NCHTDC;i++){
-				cerr << "\t" << Nofhits[i]<< " hits!\t";
-			}
-		}
+				else{
+					cerr << "TDC NO hits or TDC multi hits :: skip ";
+				}
 
-		/***** Multi Hits Mode *****/
-/*		else{
-			cerr << "\t";
-*/			/***** check # of hits and read data *****/
-/*			int Nofhits[NCHTDC], tdchits[NCHTDC];
-			for(i=0;i<NCHADC;i++){
-				CAMAC(NAF(ADC_STATION,ADCChannels[i],READ_DATA), &adcdata[i], &q, &x);
-				printf("ADC Ch%d value %7d / ",ADCChannels[i],adcdata[i]);
-				outputfile << adcdata[i] << "\t";
-			}
-			for(i=0;i<NCHTDC;i++){
-				tdchits[i] = 0;
-				CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
-				Nofhits[i] = tdchits[i] - 0xff0000;
-				for(j=0;j<Nofhits[i];j++){
-					CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
-					printf("TDC Ch%d value %7d / ",TDCChannels[i],tdcdata[i]);
-					outputfile << tdcdata[i] << "\t";
+				printf("(%ld/%ld)", iloop+1, nloop);
+				cerr << endl;
+				for(i=0;i<NCHTDC;i++){
+					printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
 				}
 			}
-			printf("(%ld/%ld)", iloop+1, nloop);
-			cerr << endl;
-			for(i=0;i<NCHTDC;i++){
-				cerr << "\t" << Nofhits[i]<< " hits!\t";
-			}
-			outputfile << endl;
-		}*/
+
+
+			/***** Multi Hits Mode *****/
+/*		else{
+				cerr << "\t";
+				// check # of hits and read data
+				int Nofhits[NCHTDC], tdchits[NCHTDC];
+
+				for(i=0;i<NCHADC;i++){
+					printf("Ch%d value %5d / ", ADCChannels[i], adcdata[i]);
+					outputfile << adcdata[i] << "\t";
+				}
+
+				for(i=0;i<NCHTDC;i++){
+					tdchits[i] = 0;
+					CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
+					Nofhits[i] = tdchits[i] - 0xff0000;
+					for(j=0;j<Nofhits[i];j++){
+						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
+						printf("TDC Ch%d value %5d / ", TDCChannels[i], tdcdata[i]);
+						outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
+					}
+				}
+				printf("(%ld/%ld)\n", iloop+1, nloop);
+				cerr << endl;
+				for(i=0;i<NCHTDC;i++){
+					printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
+				}
+				outputfile << endl;
+			}*/
+
+		}
+		else{
+			cerr << "Saturated ADC counts :: Skip" << endl;
+		}
 
 		iloop ++;
 		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x);
 		CAMAC(NAF(TDC_STATION, 0, CLR), &dummy, &q, &x);
-
 		cerr << endl;
 	}
 

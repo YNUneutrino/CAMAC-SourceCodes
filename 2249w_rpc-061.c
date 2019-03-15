@@ -1,15 +1,14 @@
-/* SLOT NUMBER of ADC/TDC */
-/* ADC = 2249W(LeCroy), TDC = RPC-061(REPIC) */
-#define ADC_STATION 15
-#define TDC_STATION 21
-int ch[]={0, 2};	// channel number list
+/* ADC 2249W(LeCroy) and TDC RPC-061(REPIC) Operation Source Code */
+#define ADC_STATION 15	// 2249W Station Number
+#define TDC_STATION 18	// RPC-061 Station Number
+int ch[]={0, 2};	// Channel Number List
 #define NCH (sizeof(ch)/sizeof(ch[0]))
 
 /**** Edited by Takashi Kanai ****/
 /**** Last update at 2005/04/01 ****/
 /*** Modified at 2008/05/22 by Yosuke Maeda ***/
 /*** Modified at 2010/08/04 by Yasuyuki Furuichi ***/
-/*** Modified at 2018/11/27 by Kensuke Yamamoto ***/
+/*** Modified at 2019/03/15 by Kensuke Yamamoto ***/
 
 
 #include <stdio.h>
@@ -43,7 +42,7 @@ int main(int argc, char *argv[]){
 		return 1;
 	}
 	sprintf(fname,"../data/%s",argv[2]);
-  
+
 	nloop = atoi(argv[1]);
 	if(!(fp = fopen(fname,"w"))){
 		printf("File: %s open error!!\n", fname);
@@ -51,31 +50,39 @@ int main(int argc, char *argv[]){
 	}
 	printf("START DATA TAKING --- %d events ---\n",nloop);
 
-	// fprintf(fp, "#ofCHs\t%d\n",NCH);
+	for(i=0;i<NCH;i++){
+		fprintf(fp, "ADCch%2d ", ch[i]);
+	}
+	for(i=0;i<NCH;i++){
+		fprintf(fp, "TDCch%2d ", ch[i]);
+	}
+	fprintf(fp, "\n");
 
-	/* init camac */
+	/* Initialize CAMAC */
 	if(CAMOPN()){
 		printf("CAMAC OPEN ERROR!\n");
 		return 1;
 	}
-	CSETCR(1);
+	CSETCR(1);	// Crate Number
 	CGENZ();
 	fprintf(stderr,"### CAMAC initialized.\n");
 
 	CGENC();
-	CAMAC(NAF(ADC_STATION,0,CLR), &dummy, &q, &x);	// Clear it ADC
+	CAMAC(NAF(ADC_STATION,0,CLR), &dummy, &q, &x);	// Clear ADC
 	CAMAC(NAF(ADC_STATION,0,ENLAM), &dummy, &q, &x);	// Enable LAM of ADC
-	CAMAC(NAF(TDC_STATION,0,CLR), &dummy, &q, &x);	// Clear it TDC
+	CAMAC(NAF(TDC_STATION,0,CLR), &dummy, &q, &x);	// Clear TDC
 	CAMAC(NAF(TDC_STATION,0,ENLAM), &dummy, &q, &x);	// Enable LAM of TDC
 	fprintf(stderr,"### START DAQ process.\n");
 
-  
+
 	for(iloop = 0;iloop < nloop;iloop++){
-		q=0;
-		while(!q){
+		int qa=0;
+		int qt=0;
+		while(!qa && !qt){
 			CAMAC(NAF(ADC_STATION,0,LAM),&dummy,&q,&x);	// LAM of ADC
 			CAMAC(NAF(TDC_STATION,0,LAM),&dummy,&q,&x);	// LAM of TDC
 		}
+
 		for(i=0;i < NCH;i++){
 			CAMAC(NAF(ADC_STATION,ch[i],READ), &adc_data[i], &q, &x);	// Read ADC data
 			CAMAC(NAF(TDC_STATION,ch[i],READ), &tdc_data[i], &q, &x);	// Read TDC data
@@ -92,15 +99,20 @@ int main(int argc, char *argv[]){
 		if(prn == NCH){
 			printf("\n");
 			for(i=0;i<NCH;i++){
-				printf("ADC Ch%d value %5d / TDC Ch%d value %5d / ",ch[i],adc_data[i],ch[i],tdc_data[i]);
-				fprintf(fp,"%7d %7d ",adc_data[i],tdc_data[i]);	// Write data
+				printf("ADC Ch%d value %5d / ",ch[i],adc_data[i]);
+				fprintf(fp,"%6d ",adc_data[i]);	// Write ADC data
 			}
+			for(i=0;i<NCH;i++){
+				printf("TDC Ch%d value %5d / ",ch[i],tdc_data[i]);
+				fprintf(fp,"%6d ",tdc_data[i]);	// Write TDC data
+			}
+
 			printf("(%d/%d)", iloop, nloop);
 			fprintf(fp, "\n");
 			fflush(fp);
 		}
 		else{
-			printf("*");
+			printf("Saturated ADC or TDC counts :: Skip\n");
 		}
 		fflush(stdout);
 	}

@@ -7,7 +7,7 @@ int ch[]={0}; // Channel Number List
 /**** Last update at 2005/04/01 ****/
 /*** Modified at 2008/05/22 by Yosuke Maeda ***/
 /*** Modified at 2010/08/04 by Yasuyuki Furuichi ***/
-/*** Modified at 2019/03/13 by Kensuke Yamamoto ***/
+/*** Modified at 2019/03/15 by Kensuke Yamamoto ***/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,7 +47,11 @@ int main(int argc, char *argv[]){
 
 	printf("START DATA TAKING --- %d events ---\n",nloop);
 
-// fprintf(fp, "#ofCHs\t%d\n",NCH);
+	for(i=0;i<NCH;i++){
+		fprintf(fp, "CH%3d ", ch[i]);
+	}
+	fprintf(fp, "\n");
+
 
 	/* Initialize CAMAC */
 	if(CAMOPN()){
@@ -91,7 +95,7 @@ int main(int argc, char *argv[]){
 			fflush(fp);
 		}
 		else{
-			printf("No hits :: Skip\n");
+			printf("Saturated ADC counts :: Skip\n");
 		}
 		fflush(stdout);
 	}

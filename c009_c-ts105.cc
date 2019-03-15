@@ -1,5 +1,4 @@
-/***** TDC C-TS105(Technoland) Operation Source Code *****/
-/***** 2012/06/09 Hajime Kubo *****/
+/* ADC C009(HOSHIN) and TDC C-TS105(Technoland) Operation Source Code */
 /***** 2019/03/15 Kensuke Yamamoto *****/
 
 extern "C" {
@@ -10,18 +9,28 @@ extern "C" {
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
+#include <string.h>
+#include <math.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/errno.h>
 
 using namespace std;
 
 #define DEBUG
 
+/***** ADC setting *****/
+const int ADC_STATION = 16;	// ADC Station Number
+const int ADCChannels[] = {0, 2};	// ADC Channel Number List
+const int NCHADC=(sizeof(ADCChannels)/sizeof(int));
+
 /***** TDC setting *****/
-const int TDC_STATION = 17;	// Station Number
-const int TDCChannels[] = {0};	// Channel Number List
+const int TDC_STATION = 17;	// TDC Station Number
+const int TDCChannels[] = {0, 2};	// TDC Channel Number List
 const int NCHTDC=(sizeof(TDCChannels)/sizeof(int));
 
 /***** CAMAC functions *****/
-const int READ_TDC = 0;
+const int READ_DATA = 0;
 const int READ_HIT = 1;
 const int N_HITS = 2;
 const int LAM = 8;
@@ -40,7 +49,7 @@ void Init_TDC( void );
 int main(int argc, char *argv[]){
 
 	long nloop, iloop=0;
-	int dummy=0, wdata=0, q=0, x=0, i, j;
+	int dummy=0, wdata=0, q=0, x=0, i, j, prn;
 	char filename[100];
 
 	/**** Check arguments ****/
@@ -54,7 +63,10 @@ int main(int argc, char *argv[]){
 	nloop = atol(argv[1]);
 	sprintf(filename,"../data/%s",argv[2]);
 	ofstream outputfile( filename );
-	int tdcdata[NCHTDC];
+	int adcdata[NCHADC], tdcdata[NCHTDC];
+	for( i=0; i<NCHADC; i++ ){
+		adcdata[i] = 0;
+	}
 	for( i=0; i<NCHTDC; i++ ){
 		tdcdata[i] = 0;
 	}
@@ -69,109 +81,144 @@ int main(int argc, char *argv[]){
 
 	cerr << "START DATA TAKING --- " << nloop << " events ---" << endl;
 
-	outputfile << "CH\tTDC counts..." << endl;
+	for(i=0;i<NCHADC;i++){
+    outputfile << "ADCch" << ADCChannels[i] << "\t";
+  }
+	outputfile << "TDCch\tTDC counts..." << endl;
+
 
 	while( iloop < nloop ){
 		cerr << "TRIG:" << iloop+1 << "\t";
 
-		/***** TDC start *****/
+		/***** ADC and TDC start *****/
 
 		Init_TDC();
 		wdata=1;	// Maximum measurement time (us) (decimal number)
-		CAMAC(NAF(TDC_STATION, 0, SET_MAX), &wdata, &q, &x);	// Set measurement time
-		CAMAC(NAF(TDC_STATION, 0, EN_LAM), &dummy, &q, &x);	// Enable LAM
+		CAMAC(NAF(TDC_STATION, 0, SET_MAX), &wdata, &q, &x);	// Set TDC measurement time
+		CAMAC(NAF(TDC_STATION, 0, EN_LAM), &dummy, &q, &x);	// Enable TDC LAM
+		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x); // Clear ADC
 		CAMAC(NAF(TDC_STATION, 0, TDC_START), &dummy, &q, &x);	// Start measurement
 
 		/***** Waiting LAM *****/
-		q=0;
+		int qa = 0;
+		int qt = 0;
 		cerr << "\tWaiting LAM ......" << flush;
-		while( !q ){
-			CAMAC(NAF(TDC_STATION, 0, LAM), &dummy, &q, &x);
-			usleep(5);
+		while( !qa && !qt ){
+			CAMAC(NAF(ADC_STATION, 0, LAM), &dummy, &qa, &x);
+			CAMAC(NAF(TDC_STATION, 0, LAM), &dummy, &qt, &x);
+			usleep(1);
 		}
 		cerr << "fire!!" << flush;
 
-		/***** Check HIT channel ******/
-		int hitchs;
-		wdata = 0;
-		CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
-		hitchs = 0xffffff - wdata;
+		/***** Read ADC Data *****/
+		for(i=0;i<NCHADC;i++){
+			CAMAC(NAF(ADC_STATION, ADCChannels[i], READ_DATA), &adcdata[i], &q, &x);
+		}
+		prn = 0;
+		for(i=0;i<NCHADC;i++){
+			if(data[i] != 4095){
+				prn++;
+			}
+		}
+		if(prn == NCHADC){
+
+			/***** Check HIT channel ******/
+			int hitchs;
+			wdata = 0;
+			CAMAC(NAF(TDC_STATION, 0, READ_HIT), &wdata, &q, &x);
+			hitchs = 0xffffff - wdata;
 #ifdef DEBUG
-		cerr << "  HIT CHs = " << hex << hitchs << dec << endl;
-		// cerr << "  HIT CHs = 0x" << hex << wdata << dec << endl;
+			cerr << "  TDC HIT CHs = " << hex << hitchs << dec << endl;
+			// cerr << "TDC HIT CHs = 0x" << hex << wdata << dec << endl;
 #endif
 
-		if(!hitchs){
+			if(!hitchs){
 #ifdef DEBUG
-			cerr << "\tNO hits :: Skip " << endl;
+				cerr << "\tTDC NO hits :: Skip " << endl;
 #endif
-		}
-		/***** Single Hit Mode *****/
-		else{
-			cerr << "\t";
-			// Check # of hits and read data
-			int readdata=0;
-			int Nofhits[NCHTDC], tdchits[NCHTDC];
-			for(i=0;i<NCHTDC;i++){
-				tdchits[i] = 0;
-				CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
-				Nofhits[i] = tdchits[i] - 0xff0000;
-				if(Nofhits[i] != 1){
-					readdata++;
+			}
+
+			/***** Single Hit Mode *****/
+			else{
+				cerr << "\t";
+				// Check # of hits and read TDC data
+				int readdata=0;
+				int Nofhits[NCHTDC], tdchits[NCHTDC];
+				for(i=0;i<NCHTDC;i++){
+					tdchits[i] = 0;
+					CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
+					Nofhits[i] = tdchits[i] - 0xff0000;
+					if(Nofhits[i] != 1){
+						readdata++;
+					}
+				}
+
+				if(readdata==0){
+					for(i=0;i<NCHADC;i++){
+			    	printf("Ch%d value %5d / ", ADCChannels[i], adcdata[i]);
+			     	outputfile << adcdata[i] << "\t";
+			    }
+					for(i=0;i<NCHTDC;i++){
+						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
+						printf("TDC Ch%d value %5d / ",TDCChannels[i],tdcdata[i]);
+						outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
+					}
+					outputfile << endl;
+				}
+
+				else{
+					cerr << "TDC NO hits or TDC multi hits :: skip ";
+				}
+
+				printf("(%ld/%ld)", iloop+1, nloop);
+				cerr << endl;
+				for(i=0;i<NCHTDC;i++){
+					printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
 				}
 			}
 
-			if(readdata==0){
+
+			/***** Multi Hits Mode *****/
+/*		else{
+				cerr << "\t";
+				// check # of hits and read data
+				int Nofhits[NCHTDC], tdchits[NCHTDC];
+
+				for(i=0;i<NCHADC;i++){
+					printf("Ch%d value %5d / ", ADCChannels[i], adcdata[i]);
+					outputfile << adcdata[i] << "\t";
+				}
+
 				for(i=0;i<NCHTDC;i++){
-					CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_TDC), &tdcdata[i], &q, &x);
-					printf("TDC Ch%d value %5d / ", TDCChannels[i], tdcdata[i]);
-					outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
+					tdchits[i] = 0;
+					CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
+					Nofhits[i] = tdchits[i] - 0xff0000;
+					for(j=0;j<Nofhits[i];j++){
+						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
+						printf("TDC Ch%d value %5d / ", TDCChannels[i], tdcdata[i]);
+						outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
+					}
+				}
+				printf("(%ld/%ld)\n", iloop+1, nloop);
+				cerr << endl;
+				for(i=0;i<NCHTDC;i++){
+					printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
 				}
 				outputfile << endl;
-			}
+			}*/
 
-			else{
-				cerr << "TDC NO hits or TDC multi hits :: Skip ";
-			}
-
-			printf("(%ld/%ld)\n", iloop+1, nloop);
-			cerr << endl;
-			for(i=0;i<NCHTDC;i++){
-				printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
-			}
+		}
+		else{
+			cerr << "Saturated ADC counts :: Skip" << endl;
 		}
 
-
-		/***** Multi Hits Mode *****/
-/*		else{
-			cerr << "\t";
-			// check # of hits and read data
-			int Nofhits[NCHTDC], tdchits[NCHTDC];
-			for(i=0;i<NCHTDC;i++){
-				tdchits[i] = 0;
-				CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
-				Nofhits[i] = tdchits[i] - 0xff0000;
-				for(j=0;j<Nofhits[i];j++){
-					CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_TDC), &tdcdata[i], &q, &x);
-					printf("TDC Ch%d value %5d / ",TDCChannels[i],tdcdata[i]);
-					outputfile << TDCChannels[i] << "\t" << tdcdata[i] << "\t";
-				}
-			}
-			printf("(%ld/%ld)\n", iloop+1, nloop);
-			cerr << endl;
-			for(i=0;i<NCHTDC;i++){
-				printf("\tCH%d: %d hits!\t", TDCChannels[i], Nofhits[i]);
-			}
-			outputfile << endl;
-		}*/
-
-
-		iloop++;
+		iloop ++;
+		CAMAC(NAF(ADC_STATION, 0, CLR), &dummy, &q, &x);
 		CAMAC(NAF(TDC_STATION, 0, CLR), &dummy, &q, &x);
 		cerr << endl;
 	}
 
-	/**** Close CAMAC ****/
+	/**** close CAMAC ****/
 	CGENZ();
 	CSETI();
 	CAM_Close();
@@ -186,7 +233,7 @@ int main(int argc, char *argv[]){
 
 void Usage( void ){
 	cerr << "\n/**********  Usage ****************/\n" << endl;
-	cerr << "./c-ts105 (number of events) (filename)  \n " << endl;
+	cerr << "./c009_c-ts105 (number of events) (filename)  \n " << endl;
 	cerr << "/*****************************************/" << endl;
 }
 
