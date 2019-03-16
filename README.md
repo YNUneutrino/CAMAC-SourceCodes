@@ -4,7 +4,7 @@ We can operate CAMAC modules even in other places if changing a few parts of eac
 
 ## CAMAC Operation Codes
 We have CAMAC modules written below.
-This README tells us how to use and explains source codes in details.
+This README tells us how to use.
 
 ### General process
 - Change directory to ~/daq/src
