@@ -43,9 +43,15 @@ This README tells us how to use.
 - Use a source file with two modules' type
 
 ### Other Modules
-- Output Register (C004(HOSHIN))  
-- Input Register (C005(HOSHIN))  
-- Scaler (?)
+#### Output Register (C004(HOSHIN))
+- We have this module's source code
+- However, we have not make sure of its correct work yet (3/17/19)
+
+#### Input Register (C005(HOSHIN))  
+- We do not have this module's source code (3/17/19)
+
+#### Scaler (?)
+- We do not have this module's source code (3/17/19)
 
 ## Test Codes
 - Source codes for tests are in test-src directory
