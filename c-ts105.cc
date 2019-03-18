@@ -17,7 +17,7 @@ using namespace std;
 
 /***** TDC setting *****/
 const int TDC_STATION = 17;	// Station Number
-const int TDCChannels[] = {0};	// Channel Number List
+const int TDCChannels[] = {7};	// Channel Number List
 const int NCHTDC=(sizeof(TDCChannels)/sizeof(int));
 
 /***** CAMAC functions *****/
