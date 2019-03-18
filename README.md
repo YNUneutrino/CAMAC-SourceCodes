@@ -30,9 +30,8 @@ This README tells us how to use.
 - This module is NOT general type in my opinion
 - This sends X value 0 when using F=8(LAM) function. However, that does not say it is breaking
 - You need to make logic that stop signal(s) do NOT enter before start signal enters
-- This module can measure multi hits' time
+- This module can measure multi time of each hit
 - You can choose single hit mode or multi hits mode in this source code
-- Do NOT use channels of odd numbers
 - You need to read instruction of this module or its source code in details if you change this source code
 
 #### RPC-061(REPIC)
