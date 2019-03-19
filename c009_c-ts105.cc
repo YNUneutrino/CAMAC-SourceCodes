@@ -205,7 +205,12 @@ int main(int argc, char *argv[]){
 				for(i=0;i<NCHTDC;i++){
 					tdchits[i] = 0;
 					CAMAC(NAF(TDC_STATION, TDCChannels[i], N_HITS), &tdchits[i], &q, &x);
-					Nofhits[i] = tdchits[i] - 0xff0000;
+					if(TDCChannels[i]%2==0){
+						Nofhits[i] = tdchits[i] - 0xff0000;
+					}
+					else{
+						Nofhits[i] = tdchits[i] - 0xff00ff;
+					}
 					for(j=0;j<Nofhits[i];j++){
 						CAMAC(NAF(TDC_STATION, TDCChannels[i], READ_DATA), &tdcdata[i], &q, &x);
 						printf("TDC Ch%d value %5d / ", TDCChannels[i], tdcdata[i]);
