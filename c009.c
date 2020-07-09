@@ -8,6 +8,7 @@ int ch[]={0}; // Channel Number List
 /*** Modified at 2008/05/22 by Yosuke Maeda ***/
 /*** Modified at 2010/08/04 by Yasuyuki Furuichi ***/
 /*** Modified at 2019/03/15 by Kensuke Yamamoto ***/
+/*** Test at 2020/07/09 by Sano & Wada ***/
 
 #include <stdio.h>
 #include <stdlib.h>

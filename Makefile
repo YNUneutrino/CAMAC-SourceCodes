@@ -8,7 +8,11 @@ CAMLIBDIR = /home/ynu/daq/kinoko/drv/camdrv
 LIBS = $(CAMLIBDIR)/camlib.o
 INCS = -I. -I$(CAMLIBDIR)
 
-all: 2249w c009 c-ts105 rpc-061 2249w_c-ts105 2249w_rpc-061 c009_c-ts105 c004
+all: 2249w c009 c-ts105 rpc-061 2249w_c-ts105 2249w_rpc-061 c009_c-ts105 c004 scaler_1
+
+scaler_1: scaler_1.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) $(INCS)
+	cp scaler_1 ../bin
 
 2249w: 2249w.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS) $(INCS)
